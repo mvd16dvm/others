@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a0b08">
-<title>Полинка, пошли гулять?</title>
+<title>полин, го гулять?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600;1,700&family=Manrope:wght@500;700;800&family=VT323&display=swap" rel="stylesheet">
 <style>
@@ -176,7 +176,7 @@
   .caption { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 22px; margin-top: 14px; line-height: 1.15; }
   .volvo { display: block; margin-top: 6px; font-family: 'Manrope', system-ui, sans-serif; font-style: normal; font-size: 12px; font-weight: 600; color: #a3192e; }
   .best { margin-top: 30px; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600;
-    font-size: 30px; color: #fff8f2; text-shadow: 0 0 14px rgba(255,240,230,.55); }
+    font-size: 22px; color: rgba(255,248,242,.85); text-shadow: 0 0 10px rgba(255,240,230,.4); }
   #sendSlot { margin-top: 18px; }
   .send { display: block; text-decoration: none; text-align: center; }
   .sendNote { margin-top: 10px; font-size: 12.5px; color: rgba(255,226,210,.55); }
@@ -198,16 +198,16 @@
     <div class="stamp" id="stamp"></div>
     <!-- 1. вопрос -->
     <section class="screen enter" id="s1">
-      <h1 class="poem">Разлука томит.<br>Ночь длинна.<br>Пора увидеться,<br>Луна.</h1>
+      <h1 class="poem">ночь длинная.<br>давно не виделись,<br>луна</h1>
       <div class="answers">
-        <button class="btn solid" data-a="Пора">Пора</button>
+        <button class="btn solid" data-a="го">го</button>
       </div>
     </section>
 
     <!-- 2. выбор дня -->
     <section class="screen hidden" id="s2">
-      <h2>Когда?</h2>
-      <p class="sub">засвеченные кадры — свободные дни</p>
+      <h2>когда?</h2>
+      <p class="sub">светлые кадры — я свободен</p>
       <div class="days" id="film"></div>
       <div class="hint" id="hint"></div>
       <button class="btn solid go" id="go" disabled>Проявить</button>
@@ -219,15 +219,14 @@
         <div class="photo">
           <canvas id="pcv"></canvas>
           <div class="big" id="pDay"></div>
-          <div class="small">свидание подтверждено</div>
+          <div class="small">кадр проявлен</div>
           <div class="ps" id="pStamp"></div>
         </div>
-        <div class="caption">заезжаю за тобой</div>
+        <div class="caption" style="font-size:19px">заеду или встретимся, где скажешь</div>
       </div>
-      <p class="best">ты — самая лучшая</p>
+      <p class="best">ты лучшая)</p>
       <div id="sendSlot">
-        <a class="btn solid send" id="send" href="https://t.me/mvd16dvm" target="_blank" rel="noopener">Отправить ответ в Telegram</a>
-        <p class="sendNote">откроется Telegram — останется нажать «отправить»</p>
+        <a class="btn solid send" id="send" href="https://t.me/mvd16dvm" target="_blank" rel="noopener">ответить в тг</a>
       </div>
       <button class="again" id="again">переснять</button>
     </section>
@@ -366,14 +365,14 @@
 
   /* ---------- шаг 2 ---------- */
   const days = [
-    { d: "Четверг",     t: "работаю, прости",               free: false },
-    { d: "Пятница",     t: "свободен весь день",            free: true  },
-    { d: "Суббота",     t: "работаю, прости",               free: false },
-    { d: "Воскресенье", t: "знаю, ты в Агаповке",                  free: false },
-    { d: "Понедельник", t: "отсыпаюсь после работы, вечером могу", free: true, label: "Понедельник вечером" },
-    { d: "Вторник",     t: "весь в твоём распоряжении",      free: true  },
+    { d: "Четверг",     t: "работаю(",               free: false },
+    { d: "Пятница",     t: "свободен, хоть весь день",            free: true  },
+    { d: "Суббота",     t: "работаю(",               free: false },
+    { d: "Воскресенье", t: "ты же в агаповке)",                  free: false },
+    { d: "Понедельник", t: "сплю после смены, вечером го", free: true, label: "Понедельник вечером" },
+    { d: "Вторник",     t: "свободен",      free: true  },
   ];
-  const busyLines = ["этот кадр не проявится — выбери светлый", "в этот день никак, прости", "недодержка. выбери другой"];
+  const busyLines = ["этот кадр не проявится, выбери светлый", "недодержка. выбери другой"];
   let picked = null;
   days.forEach((x, i) => {
     const b = document.createElement("button");
@@ -399,7 +398,7 @@
   $("go").addEventListener("click", () => {
     if (!picked) return;
     $("pDay").textContent = picked.label || picked.d;
-    const msg = picked.d + " го";
+    const msg = picked.d.toLowerCase() + " го";
     $("send").href = "https://t.me/mvd16dvm?text=" + encodeURIComponent(msg);
     $("pStamp").textContent = stampTxt;
     bigFlash();
