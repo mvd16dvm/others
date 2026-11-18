@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a0b08">
+<title>Полинка, пошли гулять?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600;1,700&family=Manrope:wght@500;700;800&family=VT323&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    background: #070404; color: #fff;
+    min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+  }
+
+  /* ---------- ночная сцена ---------- */
+  .sky {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(120% 50% at 50% 78%, rgba(240,140,70,.6) 0%, rgba(180,86,40,.35) 40%, transparent 78%),
+      linear-gradient(180deg, #0d0605 0%, #1f0e09 30%, #4a2213 58%, #7a3a1c 73%, #140806 80%, #070303 100%);
+  }
+  /* луна (poula_moon) — засвеченная, с ореолом, за ветками */
+  .moon {
+    position: fixed; z-index: 19; pointer-events: none;
+    width: min(104px, 13vh); aspect-ratio: 1; border-radius: 50%;
+    top: calc(4.5vh + env(safe-area-inset-top)); right: max(9%, calc(50% - 170px));
+    background:
+      radial-gradient(18% 16% at 34% 38%, rgba(196,150,120,.16), transparent 70%),
+      radial-gradient(12% 11% at 62% 30%, rgba(196,150,120,.13), transparent 70%),
+      radial-gradient(22% 20% at 58% 64%, rgba(190,140,110,.15), transparent 72%),
+      radial-gradient(9% 8% at 30% 68%, rgba(190,140,110,.12), transparent 70%),
+      radial-gradient(7% 7% at 74% 50%, rgba(190,140,110,.12), transparent 70%),
+      radial-gradient(circle at 42% 40%, #ffffff 0%, #fffaf2 40%, #ffe6cc 82%, #ffcfa6 100%);
+    box-shadow: 0 0 14px 3px rgba(255,255,250,.9), 0 0 44px 10px rgba(255,226,190,.45);
+    transition: opacity .8s ease;
+  }
+  .moon::before { content: ""; position: absolute; inset: -140%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255,190,140,.28), rgba(255,150,90,.1) 55%, transparent); }
+  .moon::after { content: ""; position: absolute; inset: -6px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.25) 55%, transparent 72%); mix-blend-mode: screen; }
+  body[data-screen="s2"] .moon { opacity: 0; }
+  #trees { position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; }
+  .ground {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 24%; z-index: 2;
+    background: linear-gradient(180deg, transparent, rgba(200,185,180,.10) 25%, rgba(235,220,212,.18));
+  }
+
+  /* снежинки, пойманные вспышкой */
+  #snow { position: fixed; inset: 0; z-index: 4; pointer-events: none; width: 100%; height: 100%; }
+
+  /* зерно + виньетка */
+  .grain {
+    position: fixed; inset: -50%; z-index: 20; pointer-events: none; opacity: .12;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: grain .5s steps(4) infinite;
+  }
+  @keyframes grain { 25%{transform:translate(-3%,2%)} 50%{transform:translate(2%,-3%)} 75%{transform:translate(-2%,-1%)} 100%{transform:translate(1%,3%)} }
+  .vignette { position: fixed; inset: 0; z-index: 18; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); }
+
+  /* вспышка камеры */
+  #flash { position: fixed; inset: 0; z-index: 50; background: #fff; opacity: 0; pointer-events: none; }
+  #flash.on { animation: flash .9s ease-out; }
+  @keyframes flash { 0% { opacity: 1; } 15% { opacity: .95; } 100% { opacity: 0; } }
+
+  /* дата как на мыльнице */
+  .stamp {
+    position: absolute; right: 18px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 1; pointer-events: none;
+    font-family: 'VT323', monospace; font-size: 26px; letter-spacing: 2px;
+    color: #ff9a3c; text-shadow: 0 0 6px rgba(255,120,30,.9), 0 0 16px rgba(255,90,20,.6);
+  }
+
+  /* ---------- контент ---------- */
+  main {
+    position: relative; z-index: 10;
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: calc(36px + env(safe-area-inset-top)) 22px calc(84px + env(safe-area-inset-bottom));
+  }
+  .screen { width: 100%; max-width: 420px; text-align: center; position: relative; z-index: 2; }
+  .screen.hidden { display: none; }
+  .screen.enter { animation: develop 1.4s ease-out; }
+  @keyframes develop { 0% { opacity: 0; filter: brightness(3) blur(6px); } 40% { opacity: 1; filter: brightness(1.8) blur(2px); } 100% { filter: none; } }
+
+  h1, h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600;
+    color: #fff7f1; line-height: .98; letter-spacing: -.01em;
+    text-shadow: 0 0 18px rgba(255,236,224,.35);
+  }
+  h1 { font-size: clamp(50px, 14vw, 72px); margin-bottom: 40px; }
+  h1 .name { display: block; }
+  h2 { font-size: clamp(46px, 13vw, 62px); margin-bottom: 8px; }
+  h1.poem { font-size: clamp(40px, 11vw, 56px); line-height: 1.08; margin-bottom: 34px; }
+  .verse { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 500; font-size: 21px;
+    color: rgba(255,236,224,.82); margin-bottom: 18px; letter-spacing: .3px; }
+  .verse span { display: block; margin-top: 4px; font-family: 'Manrope', system-ui, sans-serif; font-style: normal;
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,200,170,.5); }
+  .sub { color: rgba(255,236,224,.55); font-size: 14px; font-weight: 500; margin-bottom: 26px; }
+
+  /* кнопки: одна светлая, две контурные — спокойно */
+  .answers { display: flex; flex-direction: column; gap: 12px; }
+  .btn {
+    width: 100%; cursor: pointer; font: inherit; font-weight: 700; font-size: 16px; letter-spacing: .01em;
+    padding: 17px 20px; border-radius: 999px; color: #fff4ec;
+    background: rgba(12,5,4,.25); border: 1px solid rgba(255,240,232,.45);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    transition: transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .btn:hover { border-color: rgba(255,240,232,.8); }
+  .btn:active { transform: scale(.98); }
+  .btn.solid { background: #f8f1ea; border-color: #f8f1ea; color: #22090c; }
+  .btn:focus-visible { outline: 2px solid #ff9a3c; outline-offset: 3px; }
+
+  /* ---------- дни: свободные засвечены, занятые в тени ---------- */
+  /* плёнка: тёмная лента с перфорацией, кадры внутри */
+  .days {
+    position: relative; text-align: left; background: #0b0807; border-radius: 4px;
+    padding: 6px 28px; box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  }
+  .days::before, .days::after {
+    content: ""; position: absolute; top: 6px; bottom: 6px; width: 8px;
+    background: repeating-linear-gradient(180deg, rgba(235,225,215,.8) 0 7px, transparent 7px 17px);
+    border-radius: 1px;
+  }
+  .days::before { left: 10px; } .days::after { right: 10px; }
+  .day {
+    position: relative; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    width: 100%; border: 0; margin: 6px 0; border-radius: 2px;
+    font: inherit; text-align: left; cursor: pointer;
+    padding: 15px 14px; transition: transform .2s ease, box-shadow .25s ease, background .25s ease;
+  }
+  .day::after {
+    content: attr(data-n); position: absolute; left: 14px; top: 4px;
+    font-family: 'VT323', monospace; font-size: 12px; letter-spacing: 1px; color: #ff9a3c; opacity: .8;
+  }
+  .day b { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 24px; line-height: 1.1; white-space: nowrap; }
+  .day span { font-size: 12.5px; font-weight: 600; text-align: right; line-height: 1.3; }
+  /* свободные — засвеченные кадры */
+  .day.free { background: radial-gradient(120% 160% at 25% 30%, #fffdfa 0%, #f6e6dc 55%, #e2b9a5 100%); color: #22090c; }
+  .day.free span { color: #7a3a3a; }
+  /* занятые — недодержанные, почти чёрные */
+  .day.busy { background: linear-gradient(135deg, #1b1210, #24170f); color: rgba(255,226,210,.38); cursor: default; }
+  .day.busy span { color: rgba(255,226,210,.38); }
+  .day.picked { transform: scale(1.03); box-shadow: 0 0 0 2px #fff, 0 0 34px rgba(255,245,235,.6); z-index: 1; }
+  .day.shake { animation: shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(4px)} 75%{transform:translateX(-2px)} }
+
+  .hint { min-height: 22px; margin: 14px 0 8px; font-size: 13px; font-weight: 500; color: rgba(255,214,196,.75); }
+  .go:disabled { background: transparent; border-color: rgba(255,240,232,.25); color: rgba(255,240,232,.45); cursor: default; }
+
+  /* ---------- финал: полароид ---------- */
+  .polaroid {
+    margin: 0 auto; width: min(300px, 82vw); background: #f6f2ec; padding: 12px 12px 20px; border-radius: 2px;
+    transform: rotate(-2deg); color: #22090c;
+    box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    animation: drop .9s cubic-bezier(.2,1,.3,1);
+  }
+  @keyframes drop { from { transform: rotate(-6deg) translateY(-24px); opacity: 0; } }
+  .photo {
+    aspect-ratio: 1 / 1; position: relative; overflow: hidden; background: #120807;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    animation: devphoto 3s ease-out;
+  }
+  @keyframes devphoto { 0% { filter: brightness(.15) sepia(1); } 60% { filter: brightness(.9) sepia(.3); } 100% { filter: none; } }
+  .photo canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .photo::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: radial-gradient(60% 44% at 50% 48%, #fff 0%, #fff8f2 40%, rgba(255,226,206,.75) 62%, rgba(255,180,140,.2) 82%, transparent 100%); }
+  .photo > div { position: relative; z-index: 2; }
+  .photo .big { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 42px; line-height: .95; padding: 0 18px; }
+  .photo .small { font-size: 12px; font-weight: 600; color: #6b2a2a; margin-top: 8px; letter-spacing: .04em; }
+  .photo .ps { position: absolute !important; right: 10px; bottom: 6px; font-family: 'VT323', monospace; font-size: 17px; color: #ff9a3c; text-shadow: 0 0 6px rgba(255,120,30,.8); }
+  .caption { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600; font-size: 22px; margin-top: 14px; line-height: 1.15; }
+  .volvo { display: block; margin-top: 6px; font-family: 'Manrope', system-ui, sans-serif; font-style: normal; font-size: 12px; font-weight: 600; color: #a3192e; }
+  #sendSlot { margin-top: 28px; }
+  .send { display: block; text-decoration: none; text-align: center; }
+  .sendNote { margin-top: 10px; font-size: 12.5px; color: rgba(255,226,210,.55); }
+  .again { margin-top: 12px; padding: 8px 14px; background: none; border: 0; color: rgba(255,214,196,.45); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+  <div class="sky"></div>
+  <div class="moon" aria-hidden="true"></div>
+  <canvas id="trees"></canvas>
+  <div class="ground"></div>
+  
+  <canvas id="snow"></canvas>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+  <div id="flash"></div>
+  
+  <main>
+    <div class="stamp" id="stamp"></div>
+    <!-- 1. вопрос -->
+    <section class="screen enter" id="s1">
+      <h1 class="poem">Разлука томит.<br>Ночь длинна.<br>Пора увидеться,<br>Луна.</h1>
+      <div class="answers">
+        <button class="btn solid" data-a="Пора">Пора</button>
+      </div>
+    </section>
+
+    <!-- 2. выбор дня -->
+    <section class="screen hidden" id="s2">
+      <h2>Когда?</h2>
+      <p class="sub">засвеченные кадры — свободные дни</p>
+      <div class="days" id="film"></div>
+      <div class="hint" id="hint"></div>
+      <button class="btn solid go" id="go" disabled>Проявить</button>
+    </section>
+
+    <!-- 3. финал -->
+    <section class="screen hidden" id="s3">
+      <div class="polaroid">
+        <div class="photo">
+          <canvas id="pcv"></canvas>
+          <div class="big" id="pDay"></div>
+          <div class="small">свидание подтверждено</div>
+          <div class="ps" id="pStamp"></div>
+        </div>
+        <div class="caption">заезжаю за тобой</div>
+      </div>
+      <div id="sendSlot">
+        <a class="btn solid send" id="send" href="https://t.me/mvd16dvm" target="_blank" rel="noopener">Отправить ответ в Telegram</a>
+        <p class="sendNote">откроется Telegram — останется нажать «отправить»</p>
+      </div>
+      <button class="again" id="again">переснять</button>
+    </section>
+  </main>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  /* дата как на плёночной мыльнице */
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const stampTxt = `'${String(d.getFullYear()).slice(2)} ${pad(d.getMonth() + 1)} ${pad(d.getDate())}`;
+  $("stamp").textContent = stampTxt;
+
+  /* вспышка */
+  function flash() {
+    const f = $("flash");
+    f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+    try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+  }
+
+  /* ---------- деревья (силуэты голых веток) ---------- */
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let seed = 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  function branch(c, x, y, len, ang, w, depth) {
+    if (depth === 0 || len < 3) return;
+    const bend = (rnd() - .5) * .5;
+    const x2 = x + Math.cos(ang + bend) * len, y2 = y + Math.sin(ang + bend) * len;
+    c.lineWidth = w; c.beginPath(); c.moveTo(x, y);
+    c.quadraticCurveTo(x + Math.cos(ang - bend) * len * .5, y + Math.sin(ang - bend) * len * .5, x2, y2);
+    c.stroke();
+    const n = depth > 7 ? 2 : 2 + (rnd() > .5 ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const spread = (i - (n - 1) / 2) * .55 + (rnd() - .5) * .5;
+      branch(c, x2, y2, len * (.68 + rnd() * .14), ang + bend + spread, Math.max(w * .68, .45), depth - 1);
+    }
+  }
+  // дерево, растущее от края кадра внутрь — рамка, не мешающая тексту
+  function tree(c, x, y, len, ang, w, depth) { c.lineCap = "round"; branch(c, x, y, len, ang, w, depth); }
+
+  const tc = $("trees"), tx = tc.getContext("2d");
+  function drawTrees() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = innerWidth, H = innerHeight;
+    tc.width = W * dpr; tc.height = H * dpr; tx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    tx.clearRect(0, 0, W, H);
+    seed = 11;
+    const s = Math.min(Math.max(W, H) / 850, 1.6);
+    const hz = H * .78;
+    // дальний ряд — мягче и светлее, даёт глубину
+    tx.strokeStyle = "rgba(40,16,8,.55)";
+    for (let i = 0; i < 5; i++) tree(tx, W * (.15 + i * .18), hz + 4, (40 + rnd() * 30) * s, -Math.PI / 2 + (rnd() - .5) * .3, 4 * s, 8);
+    // ближние деревья по краям, кроны уходят за верх и за бок экрана
+    tx.strokeStyle = "#0a0403";
+    tree(tx, -W * .03, H * .86, 150 * s, -Math.PI / 2 + .22, 18 * s, 10);
+    tree(tx, W * 1.03, H * .84, 140 * s, -Math.PI / 2 - .26, 16 * s, 10);
+    // линия горизонта / кусты
+    tx.fillStyle = "#0c0504";
+    tx.beginPath(); tx.moveTo(0, H);
+    for (let x = 0; x <= W + 18; x += 18) tx.lineTo(x, hz - Math.sin(x * .02) * 6 - rnd() * 10);
+    tx.lineTo(W, H); tx.closePath(); tx.fill();
+  }
+  drawTrees();
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { drawTrees(); sizeSnow(); }, 150); });
+
+  /* ---------- снег во вспышке ---------- */
+  // спрайт снежинки рисуется один раз — без shadowBlur в каждом кадре
+  const sprite = document.createElement("canvas"); sprite.width = sprite.height = 32;
+  (() => { const g = sprite.getContext("2d"), r = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(.3, "rgba(255,250,245,.9)"); r.addColorStop(1, "rgba(255,240,230,0)");
+    g.fillStyle = r; g.fillRect(0, 0, 32, 32); })();
+  const sc = $("snow"), sx = sc.getContext("2d");
+  let flakes = [];
+  function sizeSnow() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    sc.width = innerWidth * dpr; sc.height = innerHeight * dpr; sx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    flakes = Array.from({ length: Math.min(70, Math.round(innerWidth * innerHeight / 14000)) }, () => ({
+      x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+      r: Math.random() * 1.8 + .5, v: Math.random() * .6 + .25, w: Math.random() * 6.28
+    }));
+  }
+  sizeSnow();
+  let boost = 0, running = false;
+  function frame() {
+    sx.clearRect(0, 0, innerWidth, innerHeight);
+    sx.globalAlpha = Math.min(1, .45 + boost);
+    for (const f of flakes) {
+      if (!reduce) { f.y += f.v; f.w += .01; f.x += Math.sin(f.w) * .3; }
+      if (f.y > innerHeight + 5) { f.y = -5; f.x = Math.random() * innerWidth; }
+      const d = f.r * 4 * (1 + boost * .8);
+      sx.drawImage(sprite, f.x - d / 2, f.y - d / 2, d, d);
+    }
+    boost *= .94; if (boost < .01) boost = 0;
+  }
+  function loop() { if (document.hidden || (reduce && !boost)) { running = false; return; } frame(); requestAnimationFrame(loop); }
+  function start() { frame(); if (!running) { running = true; requestAnimationFrame(loop); } }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) start(); });
+  start();
+
+  /* ---------- снимок для полароида ---------- */
+  function drawPhoto() {
+    const c = $("pcv"), r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = r.width, H = r.height; c.width = W * dpr; c.height = H * dpr;
+    const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const sky = g.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#2a120a"); sky.addColorStop(.7, "#a4512a"); sky.addColorStop(1, "#3a1a0e");
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    seed = 3; g.strokeStyle = "rgba(11,4,3,.8)";
+    tree(g, -6, H * 1.02, H * .26, -Math.PI / 2 + .35, 8, 8);
+    tree(g, W + 6, H * .95, H * .22, -Math.PI / 2 - .4, 7, 8);
+    // снег, пойманный вспышкой: близкие хлопья крупные и размытые
+    seed = 21;
+    for (let i = 0; i < 22; i++) {
+      const d = 3 + rnd() * rnd() * 18;
+      g.globalAlpha = .5 + rnd() * .5;
+      g.drawImage(sprite, rnd() * W - d / 2, rnd() * H - d / 2, d, d);
+    }
+    g.globalAlpha = 1;
+  }
+  const bigFlash = () => { flash(); boost = 1.2; start(); };
+
+  /* ---------- шаг 1 ---------- */
+  let answer = "";
+  document.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => {
+    answer = b.dataset.a;
+    bigFlash();
+    setTimeout(() => show("s2"), 180);
+  }));
+
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.add("hidden"));
+    const el = $(id); document.body.dataset.screen = id; el.classList.remove("hidden", "enter"); void el.offsetWidth; el.classList.add("enter");
+    scrollTo(0, 0);
+  }
+
+  /* ---------- шаг 2 ---------- */
+  const days = [
+    { d: "Четверг",     t: "работаю, прости",               free: false },
+    { d: "Пятница",     t: "свободен весь день",            free: true  },
+    { d: "Суббота",     t: "работаю, прости",               free: false },
+    { d: "Воскресенье", t: "знаю, ты в Агаповке",                  free: false },
+    { d: "Понедельник", t: "отсыпаюсь после работы, вечером могу", free: true, label: "Понедельник вечером" },
+    { d: "Вторник",     t: "весь в твоём распоряжении",      free: true  },
+  ];
+  const busyLines = ["этот кадр не проявится — выбери светлый", "в этот день никак, прости", "недодержка. выбери другой"];
+  let picked = null;
+  days.forEach((x, i) => {
+    const b = document.createElement("button");
+    b.className = "day " + (x.free ? "free" : "busy");
+    b.dataset.n = String(i + 1).padStart(2, "0") + "A";
+    b.innerHTML = `<b>${x.d}</b><span>${x.t}</span>`;
+    b.addEventListener("click", () => {
+      if (!x.free) {
+        b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+        $("hint").textContent = busyLines[Math.floor(Math.random() * busyLines.length)];
+        return;
+      }
+      flash();
+      document.querySelectorAll(".day").forEach(f => f.classList.remove("picked"));
+      b.classList.add("picked"); picked = x;
+      $("hint").textContent = "";
+      $("go").disabled = false;
+    });
+    $("film").appendChild(b);
+  });
+
+  /* ---------- шаг 3 ---------- */
+  $("go").addEventListener("click", () => {
+    if (!picked) return;
+    $("pDay").textContent = picked.label || picked.d;
+    const msg = picked.d + " го";
+    $("send").href = "https://t.me/mvd16dvm?text=" + encodeURIComponent(msg);
+    $("pStamp").textContent = stampTxt;
+    bigFlash();
+    setTimeout(() => { show("s3"); drawPhoto(); }, 200);
+  });
+  $("again").addEventListener("click", () => {
+    picked = null; $("go").disabled = true;
+    document.querySelectorAll(".day").forEach(f => f.classList.remove("picked"));
+    show("s1");
+  });
+</script>
+</body>
+</html>
